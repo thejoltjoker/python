@@ -9,7 +9,7 @@ import time
 import shutil
 
 # options
-source_folder = '/Volumes/mcbeast/temp_media/MOD'
+source_folder = '/Volumes/mcbeast/temp_media/sorted/videos'
 new_file_ext = 'mp4'
 
 print('Source folder is {}'.format(source_folder))
