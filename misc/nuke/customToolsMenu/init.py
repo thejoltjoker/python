@@ -1,0 +1,1 @@
+nuke.pluginAddPath('C:/Users/jandersson/Desktop/cc/scripts/python/nuke/customToolsMenu')

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # TODO group file formats
+# TODO exclude directories
 """
 organize_files_year.py
 Description of organize_files_year.py.
@@ -10,10 +11,10 @@ import time
 import shutil
 
 # options
-source_folder = '/Users/thejoltjoker/desktop/org_test/unsorted'
-dest_folder = os.path.abspath(
-    os.path.join(source_folder, '../', 'sorted'))
-file_operation = 'move'
+source_folder = '/Volumes/mcbeast/temp/import_toSort'
+# dest_folder = '{}_sorted'.format(source_folder)
+dest_folder = '/Volumes/mcbeast/temp_media'
+file_operation = 'move'  # copy, move, print
 
 print('Source folder is {}'.format(source_folder))
 print('Destination folder is {}'.format(dest_folder))
@@ -57,7 +58,7 @@ group_docs = ['doc',
 
 
 # create destination root
-if not os.path.exists(dest_folder):
+if not os.path.exists(dest_folder) and file_operation is not 'print':
     os.makedirs(dest_folder)
 
 
@@ -73,8 +74,8 @@ def copy_file(source, destination):
     shutil.copy2(source, destination)
 
 
-def create_destination_folder(type, year):
-    type_folder = os.path.join(dest_folder, type)
+def create_destination_folder(ftype, year):
+    type_folder = os.path.join(dest_folder, ftype)
     year_folder = os.path.join(type_folder, year)
 
     if not os.path.exists(type_folder):
@@ -102,8 +103,10 @@ def main():
             # print('Type: {}'.format(file_type))
             # print('Year: {}'.format(file_year))
 
-            dest_folder = create_destination_folder(file_type, file_year)
-            dest_file_path = os.path.join(dest_folder, file)
+            if file_operation is not 'print':
+                created_dest_folder = create_destination_folder(
+                    file_type, file_year)
+                dest_file_path = os.path.join(created_dest_folder, file)
 
             if file_operation == 'move':
                 move_file(file_path, dest_file_path)
@@ -113,8 +116,14 @@ def main():
                 copy_file(file_path, dest_file_path)
                 print("{src} copied to {dest}".format(
                     src=file_path, dest=dest_file_path))
+
+            elif file_operation == 'print':
+                dest_file_path = os.path.join(
+                    dest_folder, file_type, file_year, file)
+                print("{src} -> {dest}".format(
+                    src=file_path, dest=dest_file_path))
             else:
-                print('invalid file operation')
+                print('Invalid file operation')
 
 
 if __name__ == '__main__':
