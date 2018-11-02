@@ -10,12 +10,12 @@ import time
 import shutil
 
 # options
-source_folder = '/Volumes/mcbeast/temp_media/unsorted'
-# dest_folder = '{}_sorted'.format(source_folder)
-dest_folder = '/Volumes/mcbeast/temp_media/sorted'
+source_folder = '/Volumes/data_a/pictures/screenshots'
+dest_folder = '{}_sorted'.format(source_folder)
+# dest_folder = '/Volumes/mcbeast/temp_media/sorted'
 file_operation = 'move'  # copy, move, print
-grouped = True
-exclude = ['jens']
+grouped = False
+exclude = ['wqwerwtqew90t']
 
 print('Source folder is {}'.format(source_folder))
 print('Destination folder is {}'.format(dest_folder))
@@ -34,6 +34,7 @@ groups = {
                'mod'],
 
     "pictures": ['jpg',
+                 'arw',
                  'psd',
                  'jpeg',
                  'dng',
@@ -41,7 +42,8 @@ groups = {
                  'arw',
                  'tif',
                  'tiff',
-                 'png'],
+                 'png',
+                 'gpr'],
 
 
     "archives": ['zip',
@@ -58,7 +60,14 @@ groups = {
                   'xlsx',
                   'pdf',
                   'txt',
-                  'md']
+                  'md'],
+    "audio": ['mp3',
+              'wav',
+              'flac',
+              'opus',
+              'wma',
+              'aif',
+              'aiff']
 
 }
 
