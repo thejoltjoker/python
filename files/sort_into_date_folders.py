@@ -9,7 +9,7 @@ import time
 import shutil
 
 # options
-source_folder = '/Volumes/mcbeast/temp_media/sorted/pictures'
+source_folder = '/Volumes/mcbeast/temp_media/telefon_sorted'
 
 print('Source folder is {}'.format(source_folder))
 

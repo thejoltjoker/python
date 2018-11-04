@@ -10,11 +10,11 @@ import time
 import shutil
 
 # options
-source_folder = '/Volumes/data_a/pictures/screenshots'
-dest_folder = '{}_sorted'.format(source_folder)
-# dest_folder = '/Volumes/mcbeast/temp_media/sorted'
+source_folder = '/Volumes/mcbeast/temp_media/toSort/'
+# dest_folder = '{}_sorted'.format(source_folder)
+dest_folder = '/Volumes/mcbeast/temp_media/sorted'
 file_operation = 'move'  # copy, move, print
-grouped = False
+grouped = True
 exclude = ['wqwerwtqew90t']
 
 print('Source folder is {}'.format(source_folder))

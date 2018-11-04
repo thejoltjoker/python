@@ -7,7 +7,7 @@ Remove illegal characters from filenames.
 import os
 import string
 
-source_folder = "/Volumes/data_a/pictures/screenshots"
+source_folder = "/Volumes/mcdaddy/pictures/screenshots"
 valid_chars = " -_.{letters}{digits}".format(
     letters=string.ascii_letters, digits=string.digits)
 
