@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# TODO exclude directories
 """
 organize_files_year.py
 Description of organize_files_year.py.
 """
+# TODO check for duplicates
+# TODO fix filenames
 import os
 import time
 import shutil
@@ -22,10 +23,11 @@ import shutil
 
 
 # options
-source_folder = r'E:\Dropbox\temp\Folder'
+source_folder = r'E:\Dropbox\temp\_sort'
 # dest_folder = '{}_sorted'.format(source_folder)
-dest_folder = r'E:\Dropbox\temp\_sorted'
+dest_folder = r'E:\Dropbox\temp'
 file_operation = 'move'  # copy, move, print
+delete_empty = True
 grouped = True
 exclude = ['wqwerwtqew90t']
 
@@ -59,7 +61,9 @@ groups = {
                'tif',
                'tiff',
                'png',
-               'gpr'
+               'gpr',
+               'psd',
+               'exr'
                ],
     'disc': [
         'iso',
@@ -68,7 +72,18 @@ groups = {
         'toast',
         'vcd'
     ],
-
+    'luts': [
+        'cube',
+        'mga'
+    ],
+    '3d': [
+        'abc',
+        'obj',
+        'ma',
+        'mb',
+        '3ds',
+        'fbx'
+    ],
     'archives': ['zip',
                  'tar',
                  'gz',
@@ -136,7 +151,7 @@ def copy_file(source, destination):
 
 
 def create_destination_folder(ftype, year):
-    type_folder = os.path.join(dest_folder, ftype)
+    type_folder = os.path.join(dest_folder, "_{}".format(ftype))
     year_folder = os.path.join(type_folder, year)
 
     if not os.path.exists(type_folder):
@@ -154,7 +169,6 @@ def main():
     for subdir, dirs, files in os.walk(source_folder):
         for exclusion in exclude:
             if exclusion not in subdir.lower():
-
                 for file in files:
                     file_type = get_file_type(file)
                     file_path = os.path.join(subdir, file)
@@ -189,6 +203,13 @@ def main():
                             src=file_path, dest=dest_file_path))
                     else:
                         print('Invalid file operation')
+    if delete_empty:
+        for subdir, dirs, files in os.walk(source_folder, topdown=False):
+            for exclusion in exclude:
+                if exclusion not in subdir.lower():
+                    if len(os.listdir(subdir)) == 0:
+                        print("Deleting empty folder {}".format(subdir))
+                        os.rmdir(subdir)
 
 
 if __name__ == '__main__':
