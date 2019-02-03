@@ -7,13 +7,16 @@ Remove illegal characters from filenames.
 import os
 import string
 
-source_folder = "/Volumes/mcdaddy/pictures/screenshots"
+source_folder = r"E:\Dropbox\documents\school\gymnasiet"
 valid_chars = " -_.{letters}{digits}".format(
     letters=string.ascii_letters, digits=string.digits)
 
 
 def convert_filename(file):
-    filename = ''.join(c for c in file if c in valid_chars)
+    filename = file.replace('å', 'a')
+    filename = filename.replace('ä', 'a')
+    filename = filename.replace('ö', 'o')
+    filename = ''.join(c for c in filename if c in valid_chars)
     filename = filename.replace(' ', '_')
     return filename
 

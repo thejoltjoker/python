@@ -9,10 +9,22 @@ import os
 import time
 import shutil
 
+
+# class FileOrganizer:
+#     def __init__(self, *args, **kwargs):
+#         # options
+#         self.source_folder = r'E:\Dropbox\temp\Folder'
+#         # dest_folder = '{}_sorted'.format(source_folder)
+#         self.dest_folder = r'E:\Dropbox\temp\_sorted'
+#         self.file_operation = 'move'  # copy, move, print
+#         self.grouped = True
+#         self.exclude = ['wqwerwtqew90t']
+
+
 # options
-source_folder = '/Volumes/mcbeast/temp_media/toSort/'
+source_folder = r'E:\Dropbox\temp\Folder'
 # dest_folder = '{}_sorted'.format(source_folder)
-dest_folder = '/Volumes/mcbeast/temp_media/sorted'
+dest_folder = r'E:\Dropbox\temp\_sorted'
 file_operation = 'move'  # copy, move, print
 grouped = True
 exclude = ['wqwerwtqew90t']
@@ -24,50 +36,76 @@ print('File grouping is {}'.format(grouped))
 
 # grouping
 groups = {
-    "videos": ['mp4',
+    'books': ['epub', 'mobi'],
+    'web': ['html', 'htm', 'php'],
+    'videos': ['mp4',
                'avi',
                'mpg',
                'mov',
                'mpeg',
                'flv',
                'mkv',
-               'mod'],
+               'mod'
+               ],
 
-    "pictures": ['jpg',
-                 'arw',
-                 'psd',
-                 'jpeg',
-                 'dng',
-                 'cr2',
-                 'arw',
-                 'tif',
-                 'tiff',
-                 'png',
-                 'gpr'],
+    'images': ['jpg',
+               'arw',
+               'gif',
+               'psd',
+               'jpeg',
+               'dng',
+               'cr2',
+               'arw',
+               'tif',
+               'tiff',
+               'png',
+               'gpr'
+               ],
+    'disc': [
+        'iso',
+        'bin',
+        'dmg',
+        'toast',
+        'vcd'
+    ],
 
-
-    "archives": ['zip',
+    'archives': ['zip',
                  'tar',
                  'gz',
                  'rar',
                  '7z',
-                 '7zip'],
+                 '7zip',
+                 'arj',
+                 'z'
+                 ],
 
-    "documents": ['doc',
+    'documents': ['doc',
                   'gdoc',
                   'xls',
                   'docx',
                   'xlsx',
                   'pdf',
                   'txt',
-                  'md'],
-    "audio": ['mp3',
+                  'md'
+                  ],
+    'audio': ['mp3',
               'wav',
               'flac',
               'opus',
               'wma',
               'aif',
-              'aiff']
+              'mpa',
+              'ogg',
+              'aiff',
+              'mid'
+              'aac'
+              ],
+    'apps': ['exe',
+             'app'
+             ],
+    'fonts': ['ttf',
+              'otf'
+              ]
 
 }
 
