@@ -1,6 +1,17 @@
 import time
 import os
 from clarifai.rest import ClarifaiApp
+import string
+
+
+def validate_filename(file_name):
+    valid_chars = " -_.{letters}{digits}".format(letters=string.ascii_letters, digits=string.digits)
+    valid_file_name = file_name.replace('å', 'a')
+    valid_file_name = valid_file_name.replace('ä', 'a')
+    valid_file_name = valid_file_name.replace('ö', 'o')
+    valid_file_name = ''.join(c for c in valid_file_name if c in valid_chars)
+    valid_file_name = valid_file_name.replace(' ', '_')
+    return valid_file_name
 
 
 def get_image_content(img_path, keywords=3, separator='-'):
@@ -13,7 +24,7 @@ def get_image_content(img_path, keywords=3, separator='-'):
     model = app.public_models.general_model
     response = model.predict_by_filename(temp_img_path)
 
-    return separator.join([x['name'] for x in response['outputs'][0]['data']['concepts']][:keywords])
+    return separator.join([validate_filename(x['name']) for x in response['outputs'][0]['data']['concepts']][:keywords])
     # return response['outputs'][0]['data']['concepts'][0]['name']
 
 
@@ -30,6 +41,10 @@ def get_file_date(file_path):
     return time.strftime('%y%m%d', time.gmtime(os.path.getmtime(file_path)))
 
 
+def get_insta_author(file_name):
+    return os.path.splitext(file_name)[0].split('_')[-1]
+
+
 def rename_images(base_path):
     # base_path = r'E:\Dropbox\Pictures\other\cats'
     print(base_path)
@@ -40,20 +55,23 @@ def rename_images(base_path):
                 file_ext = os.path.splitext(file)[1]
                 file_path = os.path.join(subdir, file)
                 date = get_file_date(file_path)
+                insta = get_insta_author(file_path)
                 img_content = get_image_content(file_path)
-                new_name = '{date}_{content}_{inc:03d}{ext}'.format(date=date,
-                                                                    content=img_content,
-                                                                    inc=increment,
-                                                                    ext=file_ext)
-                new_file_path = os.path.join(subdir, new_name)
+                new_name = '{date}_{content}_{insta}_{inc:03d}{ext}'.format(date=date,
+                                                                            content=img_content,
+                                                                            insta=insta,
+                                                                            inc=increment,
+                                                                            ext=file_ext)
+                new_file_path = os.path.abspath(os.path.join(r'K:\insta_renamed', new_name))
 
                 while os.path.exists(new_file_path):
                     increment += 1
-                    new_name = '{date}_{content}_{inc:03d}{ext}'.format(date=date,
-                                                                        content=img_content,
-                                                                        inc=increment,
-                                                                        ext=file_ext)
-                    new_file_path = os.path.join(subdir, new_name)
+                    new_name = '{date}_{content}_{insta}_{inc:03d}{ext}'.format(date=date,
+                                                                                content=img_content,
+                                                                                insta=insta,
+                                                                                inc=increment,
+                                                                                ext=file_ext)
+                    new_file_path = os.path.abspath(os.path.join(r'K:\insta_renamed', new_name))
 
                 os.rename(file_path, new_file_path)
 
@@ -66,4 +84,4 @@ def rename_images(base_path):
 
 
 if __name__ == '__main__':
-    rename_images(r'E:\Dropbox\resources\reference\whiteShark')
+    rename_images(r'Q:/')

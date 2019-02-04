@@ -4,11 +4,8 @@
 organize_files_year.py
 Description of organize_files_year.py.
 """
-# TODO check for duplicates
-# TODO fix filenames
 # TODO exclude
-# TODO move
-# TODO delete empty
+
 import os
 import time
 import string
@@ -31,8 +28,14 @@ class FileOrganizer:
         else:
             self.dest_folder = dest
 
+        # Create list for exclusion
+        self.exclude_filter = []
         if exclude is None:
             self.exclude = []
+        elif type(exclude) == list:
+            self.exclude_filter.extend(exclude)
+        else:
+            self.exclude_filter.append(exclude)
 
         self.grouped = group
 
@@ -100,18 +103,6 @@ class FileOrganizer:
         else:
             return False
 
-    def create_destination_folder(self, ftype, year):
-        type_folder = os.path.join(self.dest_folder, "_{}".format(ftype))
-        year_folder = os.path.join(type_folder, year)
-
-        if not os.path.exists(type_folder):
-            os.makedirs(type_folder)
-
-        if not os.path.exists(year_folder):
-            os.makedirs(year_folder)
-
-        return year_folder
-
     def get_file_date(self, file_path):
         file_date = time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
         return file_date.split('-')
@@ -144,13 +135,23 @@ class FileOrganizer:
             base_folders.append(input_folders)
         file_list = {}
         file_id = 1
+
+        # Go through all folders
         for path in base_folders:
             for subdir, dirs, files in os.walk(path):
                 for n, file in enumerate(files):
                     file_path = os.path.join(subdir, file)
-                    file_info = self.get_file_info(file_path)
-                    file_checksum = file_info['checksum']
-                    file_list[file_id] = file_info
+
+                    # Check if file path contains exclusion filter
+                    if any(exclusion in file_path for exclusion in self.exclude_filter):
+                        print("\nFile matched exclusion pattern. Skipping {}".format(file_path))
+                    else:
+                        try:
+                            file_info = self.get_file_info(file_path)
+                            file_list[file_id] = file_info
+                        except Exception as e:
+                            print("Error: {}".format(e))
+                            pass
 
                     print("\r{} files found".format(file_id), end='')
                     # Increase id counter
@@ -219,37 +220,44 @@ class FileOrganizer:
         # Get source files
         all_files = self.get_file_list([self.source_folder, self.dest_folder])
 
-        # Get destination files
-        # dest_files = self.get_file_list(self.dest_folder)
-
-        # print(source_files)
-        # self.pretty_print(source_files)
-        # self.pretty_print(dest_files)
+        all_files_list = {}
         duplicate_files = {}
 
-        # Go through all files to check for duplicates
+        # Go through all files and add to dictionary
         for n, file_id in enumerate(all_files):
             # Get file checksum
             file_checksum = all_files[file_id]['checksum']
             file_path = all_files[file_id]['path']
 
-            if not duplicate_files.get(file_checksum):
-                duplicate_files[file_checksum] = []
+            # Create new dictionary key if it doesn't exist
+            if not all_files_list.get(file_checksum):
+                all_files_list[file_checksum] = []
 
             # Add file path to dictionary
-            duplicate_files[file_checksum].append(file_path)
+            all_files_list[file_checksum].append(file_path)
+
+        # Remove keys for files that aren't duplicates
+        for key, value in all_files_list.items():
+            if len(value) > 1:
+                duplicate_files[key] = value
+
+        print("{} duplicates found".format(len(duplicate_files)))
 
         return duplicate_files
 
 
 def main():
     # organizer = FileOrganizer(r'C:\Users\thejoltjoker\Desktop\test\source', r'C:\Users\thejoltjoker\Desktop\test\dest')
-    organizer = FileOrganizer(r'E:\Dropbox\temp')
+    organizer = FileOrganizer(r'E:\Dropbox\Pictures', exclude=['lightroom'])
     # organizer.dryrun()
     # organizer.copy()
     # organizer.move(verify=False, delete_empty=True)
-    organizer.delete_empty_folders()
-    # organizer.pretty_print(organizer.find_duplicates())
+    # organizer.delete_empty_folders()
+    dupes = organizer.find_duplicates()
+    print(dupes)
+    # Remove duplicates
+    # for key, value in dupes.items():
+    #     os.remove(value[1])
 
 
 if __name__ == '__main__':
