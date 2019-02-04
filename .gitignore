@@ -1,4 +1,6 @@
-*venv*
+*venv
+
+venv_win
 
 .vscode
 vendor/V!ctor+Tools+2.0v1
