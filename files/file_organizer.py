@@ -4,7 +4,6 @@
 organize_files_year.py
 Description of organize_files_year.py.
 """
-# TODO exclude
 
 import os
 import time
@@ -41,9 +40,9 @@ class FileOrganizer:
 
         self.groups = {'books': ['epub', 'mobi'],
                        'web': ['html', 'htm', 'php'],
-                       'videos': ['mp4', 'avi', 'mpg', 'mov', 'mpeg', 'flv', 'mkv', 'mod'],
+                       'videos': ['mp4', 'avi', 'mpg', 'mov', 'mpeg', 'flv', 'mkv', 'mod', 'm2ts'],
                        'images': ['jpg', 'arw', 'gif', 'psd', 'jpeg', 'dng', 'cr2', 'arw', 'tif', 'tiff', 'png', 'gpr',
-                                  'bmp', 'exr'],
+                                  'bmp', 'exr', 'sr2', 'arw'],
                        'photoshop': ['psd', 'psb'],
                        'illustrator': ['ai'],
                        'disc': ['iso', 'bin', 'dmg', 'toast', 'vcd'],
@@ -154,9 +153,10 @@ class FileOrganizer:
                             pass
 
                     print("\r{} files found".format(file_id), end='')
+
                     # Increase id counter
                     file_id += 1
-        print('')
+        print('\n')
 
         return file_list
 
@@ -170,7 +170,7 @@ class FileOrganizer:
         self.organize(operation='move', verify=verify, validate_name=validate_name)
         self.delete_empty_folders(self.source_folder)
 
-    def organize(self, operation=None, verify=True, validate_name=True):
+    def organize(self, operation=None, verify=True, validate_name=True, overwrite=False):
         """docstring for main"""
         source_files = self.get_file_list(self.source_folder)
         file_count = len(source_files)
@@ -190,26 +190,33 @@ class FileOrganizer:
                 # Create destination folder
                 self.create_folder(os.path.dirname(dest_file_path))
 
-            if operation == 'copy':
-                # Copy file
-                self.copy_file(file_path, dest_file_path)
+            if os.path.exists(dest_file_path) and not overwrite:
+                print("{op}: File with same name already exists in destination. Skipping {src}".format(op=operation.title(),
+                                                                                        src=file_path))
 
-            elif operation == 'move':
-                # Copy file
-                self.move_file(file_path, dest_file_path)
-
-            # Verify
-            if verify and operation in ['copy', 'move']:
-                if self.get_file_checksum(dest_file_path) == file_checksum:
-                    print(
-                        "{op} {cur_count}/{tot_count}: {src}\t->\t{dest}".format(op=operation.title(), cur_count=n + 1,
-                                                                                 tot_count=file_count, src=file_path,
-                                                                                 dest=dest_file_path))
-                else:
-                    print("Operation cancelled. Checksum mismatch\n{src}\t->\t{dest}".format(src=file_path,
-                                                                                             dest=dest_file_path))
             else:
-                print("{op}: {src}\t->\t{dest}".format(op=operation.title(), src=file_path, dest=dest_file_path))
+                if operation == 'copy':
+                    # Copy file
+                    self.copy_file(file_path, dest_file_path)
+
+                elif operation == 'move':
+                    # Copy file
+                    self.move_file(file_path, dest_file_path)
+
+                # Verify
+                if verify and operation in ['copy', 'move']:
+                    if self.get_file_checksum(dest_file_path) == file_checksum:
+                        print(
+                            "{op} {cur_count}/{tot_count}: {src}\t->\t{dest}".format(op=operation.title(),
+                                                                                     cur_count=n + 1,
+                                                                                     tot_count=file_count,
+                                                                                     src=file_path,
+                                                                                     dest=dest_file_path))
+                    else:
+                        print("Operation cancelled. Checksum mismatch\n{src}\t->\t{dest}".format(src=file_path,
+                                                                                                 dest=dest_file_path))
+                else:
+                    print("{op}: {src}\t->\t{dest}".format(op=operation.title(), src=file_path, dest=dest_file_path))
 
     def pretty_print(self, input):
         # Pretty print output
@@ -248,16 +255,18 @@ class FileOrganizer:
 
 def main():
     # organizer = FileOrganizer(r'C:\Users\thejoltjoker\Desktop\test\source', r'C:\Users\thejoltjoker\Desktop\test\dest')
-    organizer = FileOrganizer(r'E:\Dropbox\Pictures', exclude=['lightroom'])
+    # organizer = FileOrganizer(r'E:\Dropbox\Pictures', exclude=['lightroom'])
+    organizer = FileOrganizer('/Volumes/mcbeast/temp_media/_sort', '/Volumes/mcbeast/temp_media/_sorted')
     # organizer.dryrun()
     # organizer.copy()
-    # organizer.move(verify=False, delete_empty=True)
+    # organizer.move(delete_empty=True)
     # organizer.delete_empty_folders()
     dupes = organizer.find_duplicates()
-    print(dupes)
+    organizer.pretty_print(dupes)
     # Remove duplicates
-    # for key, value in dupes.items():
-    #     os.remove(value[1])
+    for key, value in dupes.items():
+        os.remove(value[1])
+        organizer.move_file(value[0], os.path.join('/Volumes/mcbeast/temp_media/_duplicates',os.path.basename(value[0])))
 
 
 if __name__ == '__main__':
