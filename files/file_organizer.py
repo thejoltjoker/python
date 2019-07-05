@@ -88,11 +88,13 @@ class FileOrganizer:
                 os.rmdir(subdir)
 
     def validate_filename(self, file_name):
-        valid_chars = " -_.{letters}{digits}".format(letters=string.ascii_letters, digits=string.digits)
+        valid_chars = " -_.{letters}{digits}".format(
+            letters=string.ascii_letters, digits=string.digits)
         valid_file_name = file_name.replace('å', 'a')
         valid_file_name = valid_file_name.replace('ä', 'a')
         valid_file_name = valid_file_name.replace('ö', 'o')
-        valid_file_name = ''.join(c for c in valid_file_name if c in valid_chars)
+        valid_file_name = ''.join(
+            c for c in valid_file_name if c in valid_chars)
         valid_file_name = valid_file_name.replace(' ', '_')
         return valid_file_name
 
@@ -103,7 +105,8 @@ class FileOrganizer:
             return False
 
     def get_file_date(self, file_path):
-        file_date = time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
+        file_date = time.strftime(
+            '%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
         return file_date.split('-')
 
     def get_file_checksum(self, fname):
@@ -143,7 +146,8 @@ class FileOrganizer:
 
                     # Check if file path contains exclusion filter
                     if any(exclusion in file_path for exclusion in self.exclude_filter):
-                        print("\nFile matched exclusion pattern. Skipping {}".format(file_path))
+                        print(
+                            "\nFile matched exclusion pattern. Skipping {}".format(file_path))
                     else:
                         try:
                             file_info = self.get_file_info(file_path)
@@ -161,13 +165,16 @@ class FileOrganizer:
         return file_list
 
     def dryrun(self, verify=True, validate_name=True):
-        self.organize(operation='dryrun', verify=verify, validate_name=validate_name)
+        self.organize(operation='dryrun', verify=verify,
+                      validate_name=validate_name)
 
     def copy(self, verify=True, validate_name=True):
-        self.organize(operation='copy', verify=verify, validate_name=validate_name)
+        self.organize(operation='copy', verify=verify,
+                      validate_name=validate_name)
 
     def move(self, verify=True, validate_name=True, delete_empty=False):
-        self.organize(operation='move', verify=verify, validate_name=validate_name)
+        self.organize(operation='move', verify=verify,
+                      validate_name=validate_name)
         self.delete_empty_folders(self.source_folder)
 
     def organize(self, operation=None, verify=True, validate_name=True, overwrite=False):
@@ -182,17 +189,20 @@ class FileOrganizer:
             file_checksum = source_files[file_id]['checksum']
 
             if validate_name:
-                dest_file_path = os.path.join(self.dest_folder, file_type, file_year, self.validate_filename(file_name))
+                dest_file_path = os.path.join(
+                    self.dest_folder, file_type, file_year, self.validate_filename(file_name))
             else:
-                dest_file_path = os.path.join(self.dest_folder, file_type, file_year, file_name)
+                dest_file_path = os.path.join(
+                    self.dest_folder, file_type, file_year, file_name)
 
             if operation in ['copy', 'move']:
                 # Create destination folder
                 self.create_folder(os.path.dirname(dest_file_path))
 
             if os.path.exists(dest_file_path) and not overwrite:
-                print("{op}: File with same name already exists in destination. Skipping {src}".format(op=operation.title(),
-                                                                                        src=file_path))
+                print("{op}: File with same name already exists in destination. Skipping {src}".format(
+                    op=operation.title(),
+                    src=file_path))
 
             else:
                 if operation == 'copy':
@@ -216,7 +226,8 @@ class FileOrganizer:
                         print("Operation cancelled. Checksum mismatch\n{src}\t->\t{dest}".format(src=file_path,
                                                                                                  dest=dest_file_path))
                 else:
-                    print("{op}: {src}\t->\t{dest}".format(op=operation.title(), src=file_path, dest=dest_file_path))
+                    print("{op}: {src}\t->\t{dest}".format(op=operation.title(),
+                                                           src=file_path, dest=dest_file_path))
 
     def pretty_print(self, input):
         # Pretty print output
@@ -256,17 +267,25 @@ class FileOrganizer:
 def main():
     # organizer = FileOrganizer(r'C:\Users\thejoltjoker\Desktop\test\source', r'C:\Users\thejoltjoker\Desktop\test\dest')
     # organizer = FileOrganizer(r'E:\Dropbox\Pictures', exclude=['lightroom'])
-    organizer = FileOrganizer('/Volumes/mcbeast/temp_media/_sort', '/Volumes/mcbeast/temp_media/_sorted')
-    # organizer.dryrun()
+    organizer = FileOrganizer(
+        '/Volumes/mcbeast/temp_media/_sorted/images')
+    # organizer.dryrun(verify=False)
     # organizer.copy()
     # organizer.move(delete_empty=True)
     # organizer.delete_empty_folders()
     dupes = organizer.find_duplicates()
     organizer.pretty_print(dupes)
-    # Remove duplicates
-    for key, value in dupes.items():
-        os.remove(value[1])
-        organizer.move_file(value[0], os.path.join('/Volumes/mcbeast/temp_media/_duplicates',os.path.basename(value[0])))
+    # Move duplicates
+    # for key, values in dupes.items():
+    #     # print(values[1])
+    #     os.remove(values[1])
+    #     for file_path in values:
+    #         if '0301' in file_path:
+    #             print(file_path)
+    #             os.remove(file_path)
+                # print(os.path.join('/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
+                # organizer.move_file(file_path, os.path.join(
+                #     '/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
 
 
 if __name__ == '__main__':

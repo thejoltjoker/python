@@ -45,7 +45,7 @@ def get_insta_author(file_name):
     return os.path.splitext(file_name)[0].split('_')[-1]
 
 
-def rename_images(base_path):
+def rename_images(base_path, dryrun=False, keywords=3):
     # base_path = r'E:\Dropbox\Pictures\other\cats'
     print(base_path)
     for subdir, dirs, files in os.walk(base_path):
@@ -55,25 +55,24 @@ def rename_images(base_path):
                 file_ext = os.path.splitext(file)[1]
                 file_path = os.path.join(subdir, file)
                 date = get_file_date(file_path)
-                insta = get_insta_author(file_path)
-                img_content = get_image_content(file_path)
-                new_name = '{date}_{content}_{insta}_{inc:03d}{ext}'.format(date=date,
-                                                                            content=img_content,
-                                                                            insta=insta,
-                                                                            inc=increment,
-                                                                            ext=file_ext)
-                new_file_path = os.path.abspath(os.path.join(r'K:\insta_renamed', new_name))
+                # insta = get_insta_author(file_path)
+                img_content = get_image_content(file_path, keywords=keywords)
+                new_name = '{date}_{content}_{inc:03d}{ext}'.format(date=date,
+                                                                    content=img_content,
+                                                                    inc=increment,
+                                                                    ext=file_ext)
+                new_file_path = os.path.abspath(os.path.join(subdir, new_name))
 
                 while os.path.exists(new_file_path):
                     increment += 1
-                    new_name = '{date}_{content}_{insta}_{inc:03d}{ext}'.format(date=date,
-                                                                                content=img_content,
-                                                                                insta=insta,
-                                                                                inc=increment,
-                                                                                ext=file_ext)
-                    new_file_path = os.path.abspath(os.path.join(r'K:\insta_renamed', new_name))
+                    new_name = '{date}_{content}_{inc:03d}{ext}'.format(date=date,
+                                                                        content=img_content,
+                                                                        inc=increment,
+                                                                        ext=file_ext)
+                    new_file_path = os.path.abspath(os.path.join(subdir, new_name))
 
-                os.rename(file_path, new_file_path)
+                if not dryrun:
+                    os.rename(file_path, new_file_path)
 
                 print("{old} -> {new}".format(old=file_path, new=new_file_path))
 
@@ -84,4 +83,4 @@ def rename_images(base_path):
 
 
 if __name__ == '__main__':
-    rename_images(r'Q:/')
+    rename_images(r'C:\Users\thejoltjoker\Desktop\test\source\test', keywords=2)
