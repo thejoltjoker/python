@@ -7,10 +7,11 @@ Description of script_name.py.
 import os
 import hashlib
 import logging
-from datetime import datetime
+import datetime
 import shutil
 import math
 import argparse
+import time
 
 
 class Offloader:
@@ -44,6 +45,7 @@ class Offloader:
     def offload(self):
         skipped_files = []
         transferred_files = []
+        created_folders = []
 
         # Get list of files to transfer
         source_file_list = self.get_file_list(self.source)
@@ -54,6 +56,9 @@ class Offloader:
         self.logger.info("Total file size: %s", self.convert_size(total_file_size))
 
         self.logger.info("---\n")
+
+        # Get start time to calculate remaining time
+        start_time = time.time()
 
         # Iterate files in list
         for file_id in source_file_list:
@@ -120,7 +125,10 @@ class Offloader:
                     else:
 
                         # Create destination folder
-                        self.create_folder(os.path.dirname(dest_file_path))
+                        new_folder = os.path.dirname(dest_file_path)
+                        self.create_folder(new_folder)
+                        if new_folder not in created_folders:
+                            created_folders.append(new_folder)
 
                         # Copy file
                         try:
@@ -139,10 +147,24 @@ class Offloader:
             # Add file size to total
             total_transferred_size += current_file['size']
 
+            # Calculate remaining time
+            elapsed_time = time.time()-start_time
+            self.logger.debug("Elapsed time: %s", time.strftime('%-M min %-S sec', time.gmtime(elapsed_time)))
+
+            bytes_per_second = total_transferred_size/elapsed_time
+            self.logger.debug("Avg. transfer speed: %s/s", self.convert_size(bytes_per_second))
+
+            size_remaining = total_file_size-total_transferred_size
+            time_remaining = size_remaining/bytes_per_second
+            self.logger.debug("Approx. time remaining: %s", time.strftime('%-M min %-S sec', time.gmtime(time_remaining)))
+
             self.logger.info("---\n")
 
         self.logger.info("%s files transferred", len(transferred_files))
         self.logger.debug("Transferred files: %s", transferred_files)
+
+        self.logger.info("%s folders created", len(transferred_files))
+        self.logger.debug("Created folders: %s", created_folders)
 
         self.logger.info("%s files skipped", len(skipped_files))
         self.logger.debug("Skipped files: %s", skipped_files)
@@ -158,56 +180,6 @@ class Offloader:
                                      file_info['name']])
         return new_filename
 
-    def offload_old(self):
-        # Get list of files to transfer
-        file_list = self.get_file_list(self.source)
-        transferred_file_list = {}
-
-        # Get total file size to calculate percentage
-        total_file_size = sum([file_list[x]['size'] for x in file_list])
-        total_transferred_size = 0
-
-        # Transfer files
-        for file_id in file_list:
-            current_file = file_list[file_id]
-
-            # Create destination path
-            date_formatted = self.convert_date(current_file['date']).strftime('%Y-%m-%d')
-            new_filename = "_".join([self.convert_date(current_file['date']).strftime('%y%m%d'),
-                                     current_file['name']])
-            dest_path = os.path.join(self.destination, date_formatted[:4], date_formatted, new_filename)
-
-            # Add file size to total
-            total_transferred_size += current_file['size']
-
-            # Copy files if they don't already exist
-            if os.path.isfile(dest_path):
-                dest_file_info = self.get_file_info(dest_path)
-                self.logger.warning("file exists", dest_file_info)
-                pass
-            else:
-                self.create_folder(os.path.dirname(dest_path))
-                try:
-                    self.copy_file(current_file['path'], dest_path)
-                    # Add transferred file info to list
-                    transferred_file_list[file_id] = self.get_file_info(dest_path)
-                except Exception as e:
-                    self.logger.error(e)
-                    pass
-
-                print("Copying file {id}/{total}\n"
-                      "{trans_size} of {total_size} transferred ({percentage}%)\n"
-                      "Source: {source}\n"
-                      "Destination: {dest}\n"
-                      "Size: {size}\n".format(name=current_file['name'],
-                                              id=file_id,
-                                              total=len(file_list),
-                                              source=current_file['path'],
-                                              dest=dest_path,
-                                              size=self.convert_size(current_file['size']),
-                                              trans_size=self.convert_size(total_transferred_size),
-                                              total_size=self.convert_size(total_file_size),
-                                              percentage=round((total_transferred_size / total_file_size) * 100, 2)))
 
     def copy_file(self, source, destination):
         shutil.copyfile(source, destination)
@@ -226,20 +198,24 @@ class Offloader:
             os.makedirs(folder)
 
     def convert_date(self, timestamp):
-        year = datetime.fromtimestamp(timestamp).strftime('%Y')
-        month = datetime.fromtimestamp(timestamp).strftime('%m')
-        day = datetime.fromtimestamp(timestamp).strftime('%d')
-        # return (year, month, day)
-        return datetime.fromtimestamp(timestamp)
+        return datetime.datetime.fromtimestamp(timestamp)
 
     def get_file_list(self, path):
         file_list = {}
         file_id = 1
+        total_file_size = 0
         for root, dirs, files in os.walk(path):
             for file in files:
                 file_list[file_id] = self.get_file_info(os.path.join(root, file))
+
+                # Append file size
+                total_file_size += file_list[file_id]['size']
+
+                # Increment file id
                 file_id += 1
+                
                 self.logger.info("%s files collected", file_id - 1)
+                self.logger.debug("Total size collected: %s", self.convert_size(total_file_size))
         return file_list
 
     def get_file_checksum(self, fname):
@@ -259,7 +235,7 @@ class Offloader:
             'name': os.path.basename(file_path),
             'path': file_path,
             'timestamp': file_timestamp,
-            'date': datetime.fromtimestamp(file_timestamp),
+            'date': datetime.datetime.fromtimestamp(file_timestamp),
             'checksum': self.get_file_checksum(file_path),
             'size': os.path.getsize(file_path)
         }
