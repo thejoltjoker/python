@@ -4,6 +4,9 @@
 script_name.py
 Description of script_name.py.
 """
+# TODO verify files after copy
+# TODO multiple destinations
+# TODO make it easier to customize
 import os
 import hashlib
 import logging
@@ -15,10 +18,13 @@ import time
 
 
 class Offloader:
-    def __init__(self, source, dest):
+    def __init__(self, source, dest, original_structure, move, dryrun):
         self.logger = self.setup_logger()
         self.source = source
         self.destination = dest
+        self.original_structure = original_structure
+        self.move = move
+        self.dryrun = dryrun
         self.exclude = ['MEDIAPRO.XML',
                         'STATUS.BIN',
                         'SONYCARD.IND',
@@ -54,7 +60,6 @@ class Offloader:
         total_file_size = sum([source_file_list[x]['size'] for x in source_file_list])
         total_transferred_size = 0
         self.logger.info("Total file size: %s", self.convert_size(total_file_size))
-
         self.logger.info("---\n")
 
         # Get start time to calculate remaining time
@@ -78,12 +83,17 @@ class Offloader:
 
             else:
                 while True:
-                    # Create destination path
-                    new_filename = self.create_new_filename(current_file, incremental)
-                    dest_file_path = os.path.join(self.destination,
-                                                  current_file['date'].strftime('%Y'),
-                                                  current_file['date'].strftime('%Y-%m-%d'),
-                                                  new_filename)
+                    if self.original_structure:
+                        new_filename = current_file['name']
+                        dest_file_path = os.path.join(current_file['path'].replace(self.source, self.destination))
+                    else:
+                        # Create destination path
+                        new_filename = self.create_new_filename(current_file, incremental)
+
+                        dest_file_path = os.path.join(self.destination,
+                                                      current_file['date'].strftime('%Y'),
+                                                      current_file['date'].strftime('%Y-%m-%d'),
+                                                      new_filename)
 
                     # Check if file already exists at destination
                     if os.path.isfile(dest_file_path):
@@ -126,16 +136,28 @@ class Offloader:
 
                         # Create destination folder
                         new_folder = os.path.dirname(dest_file_path)
-                        self.create_folder(new_folder)
+                        if not self.dryrun:
+                            self.create_folder(new_folder)
+
                         if new_folder not in created_folders:
                             created_folders.append(new_folder)
 
                         # Copy file
                         try:
-                            self.logger.info("Copying %s", self.convert_size(current_file['size']))
+                            if self.move:
+                                self.logger.info("Moving %s", self.convert_size(current_file['size']))
+                            else:
+                                self.logger.info("Copying %s", self.convert_size(current_file['size']))
                             self.logger.info("Source: %s", current_file['path'])
                             self.logger.info("Destination: %s", dest_file_path)
-                            self.copy_file(current_file['path'], dest_file_path)
+
+                            if self.dryrun:
+                                self.logger.info("DRYRUN ENABLED, NOT COPYING")
+                            else:
+                                if self.move:
+                                    self.move_file(current_file['path'], dest_file_path)
+                                else:
+                                    self.copy_file(current_file['path'], dest_file_path)
 
                             # Add file to transferred list
                             transferred_files.append(current_file['name'])
@@ -148,41 +170,53 @@ class Offloader:
             total_transferred_size += current_file['size']
 
             # Calculate remaining time
-            elapsed_time = time.time()-start_time
+            elapsed_time = time.time() - start_time
             self.logger.debug("Elapsed time: %s", time.strftime('%-M min %-S sec', time.gmtime(elapsed_time)))
 
-            bytes_per_second = total_transferred_size/elapsed_time
+            bytes_per_second = total_transferred_size / elapsed_time
             self.logger.debug("Avg. transfer speed: %s/s", self.convert_size(bytes_per_second))
 
-            size_remaining = total_file_size-total_transferred_size
-            time_remaining = size_remaining/bytes_per_second
-            self.logger.debug("Approx. time remaining: %s", time.strftime('%-M min %-S sec', time.gmtime(time_remaining)))
+            size_remaining = total_file_size - total_transferred_size
+            time_remaining = size_remaining / bytes_per_second
+            self.logger.debug("Size remaining: %s", self.convert_size(size_remaining))
+            self.logger.debug("Approx. time remaining: %s",
+                              time.strftime('%-M min %-S sec', time.gmtime(time_remaining)))
 
             self.logger.info("---\n")
 
         self.logger.info("%s files transferred", len(transferred_files))
         self.logger.debug("Transferred files: %s", transferred_files)
 
-        self.logger.info("%s folders created", len(transferred_files))
+        self.logger.info("%s folders created", len(created_folders))
         self.logger.debug("Created folders: %s", created_folders)
 
         self.logger.info("%s files skipped", len(skipped_files))
         self.logger.debug("Skipped files: %s", skipped_files)
 
     def create_new_filename(self, file_info, incremental=0):
-        if incremental >= 1:
-            new_filename = "_".join([file_info['date'].strftime('%y%m%d'),
-                                     os.path.splitext(file_info['name'])[0],
-                                     "{:03d}{}".format(incremental, os.path.splitext(file_info['name'])[1])])
-
+        if self.original_structure:
+            if incremental >= 1:
+                new_filename = "_".join([os.path.splitext(file_info['name'])[0],
+                                         "{:03d}{}".format(incremental, os.path.splitext(file_info['name'])[1])])
+            else:
+                new_filename = file_info['name']
         else:
-            new_filename = "_".join([file_info['date'].strftime('%y%m%d'),
-                                     file_info['name']])
-        return new_filename
+            if incremental >= 1:
+                new_filename = "_".join([file_info['date'].strftime('%y%m%d'),
+                                         os.path.splitext(file_info['name'])[0],
+                                         "{:03d}{}".format(incremental, os.path.splitext(file_info['name'])[1])])
 
+            else:
+                new_filename = "_".join([file_info['date'].strftime('%y%m%d'),
+                                         file_info['name']])
+
+        return new_filename
 
     def copy_file(self, source, destination):
         shutil.copyfile(source, destination)
+
+    def move_file(self, source, destination):
+        shutil.move(source, destination)
 
     def convert_size(self, size_bytes):
         if size_bytes == 0:
@@ -206,6 +240,7 @@ class Offloader:
         total_file_size = 0
         for root, dirs, files in os.walk(path):
             for file in files:
+                self.logger.debug("Getting file info for %s", file)
                 file_list[file_id] = self.get_file_info(os.path.join(root, file))
 
                 # Append file size
@@ -213,7 +248,7 @@ class Offloader:
 
                 # Increment file id
                 file_id += 1
-                
+
                 self.logger.info("%s files collected", file_id - 1)
                 self.logger.debug("Total size collected: %s", self.convert_size(total_file_size))
         return file_list
@@ -226,7 +261,7 @@ class Offloader:
         return hash_md5.hexdigest()
 
     def get_file_date(self, file_path):
-        return os.path.getctime(file_path)
+        return os.path.getmtime(file_path)
 
     def get_file_info(self, file_path):
         file_timestamp = self.get_file_date(file_path)
@@ -259,10 +294,23 @@ def main():
                             type=str,
                             help='The destination folder')
 
+    cmd_parser.add_argument('--original-structure',
+                            help='Copies with original filenames and structure',
+                            action='store_true')
+
+    cmd_parser.add_argument('--move',
+                            help='Move files instead of copy',
+                            action='store_true')
+
+    cmd_parser.add_argument('--dryrun',
+                            help='Run the script without actually copying anything',
+                            action='store_true')
+
     # Execute the parse_args() method
     args = cmd_parser.parse_args()
 
-    ol = Offloader(args.source, args.destination)
+    # Run offloader
+    ol = Offloader(args.source, args.destination, args.original_structure, args.move,args.dryrun)
     ol.offload()
 
 
