@@ -16,8 +16,9 @@ def convert_filename(file):
     filename = file.replace('å', 'a')
     filename = filename.replace('ä', 'a')
     filename = filename.replace('ö', 'o')
-    filename = ''.join(c for c in filename if c in valid_chars)
     filename = filename.replace(' ', '_')
+    filename = ''.join(c for c in filename if c in valid_chars)
+
     return filename
 
 

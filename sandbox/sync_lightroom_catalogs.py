@@ -2,30 +2,32 @@
 # -*- coding: utf-8 -*-
 """
 sync_lightroom_catalogs.py
-Description of sync_lightroom_catalogs.py.
+Keep lightroom catalogs up to date on different volumes.
 """
 import os
 import logging
 import hashlib
 import pprint
 import json
+from pathlib import Path
+
+
+def setup_logger():
+    # Setup logger
+    # logger = logging.getLogger(__name__)
+    # handler = logging.StreamHandler()
+    logging.basicConfig(level=logging.DEBUG, format='%(name)-10s %(levelname)8s %(message)s')
+    # formatter = logging.Formatter('%(asctime)-20s %(name)-10s %(levelname)-8s %(message)s', "%Y-%m-%d %H:%M:%S")
+    #
+    # handler.setFormatter(formatter)
+    # logger.addHandler(handler)
+    # logger.setLevel(logging.DEBUG)
+    # return logger
 
 
 class LRSync:
     def __init__(self):
         self.catalogs = []
-        self.logger = self.setup_logger()
-
-    def setup_logger(self):
-        # Setup logger
-        logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)-20s %(name)-10s %(levelname)-8s %(message)s', "%Y-%m-%d %H:%M:%S")
-
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
-        return logger
 
     @staticmethod
     def get_volumes_list():
@@ -53,26 +55,31 @@ class LRSync:
         for vol in volumes:
             catalogs[vol] = self.get_catalogs(vol)
 
-    def get_catalogs(self, volume):
+    def get_catalogs(self, directory, save_to_file=True):
         catalogs_meta = {}
-        lr_work_path = os.path.join(
-            '/Volumes', volume, 'pictures', 'lightroom', 'catalogs')
+        directory = Path(directory)
+
         # Check if folder exists
-        if os.path.isdir(lr_work_path):
-            self.logger.debug(lr_work_path)
-            for root, dirs, files in os.walk(lr_work_path, topdown=True):
-                catalogs = [c for c in files if c.endswith(
-                    'lrcat') and 'backups' not in root.lower()]
+        if directory.exists():
+            logging.debug(directory)
+            for root, dirs, files in os.walk(directory, topdown=True):
+                if "Backups" in root:
+                    continue
+                # Skip lrdata folders
+                dirs[:] = [x for x in dirs if not x.endswith(".lrdata")]
+
+                # Get catalog files
+                catalogs = [c for c in files if c.endswith('lrcat') and 'backups' not in root.lower()]
+
                 for cat in catalogs:
-                    cat_path = os.path.join(root, cat)
+                    cat_path = Path(os.path.join(root, cat))
                     catalogs_meta[cat] = {
                         "path": cat_path,
-                        "rel_path": cat_path.replace(lr_work_path, ''),
-                        "last_modified": os.path.getmtime(cat_path),
+                        "last_modified": cat_path.stat().st_mtime,
                         "md5": self.hashfile(cat_path)
                     }
-                    self.logger.debug(catalogs_meta[cat])
-        self.logger.debug(catalogs_meta)
+                    logging.debug(catalogs_meta[cat])
+        logging.debug(catalogs_meta)
         return catalogs_meta
 
 
@@ -87,10 +94,12 @@ def main():
     #
     # pprint.pprint(catalogs_meta)
     lr_sync = LRSync()
-    volumes = lr_sync.get_volumes_list()
-    print(volumes)
-    catalogs = lr_sync.get_catalogs('mcdrive')
-    print(catalogs)
+    # volumes = lr_sync.get_volumes_list()
+    # print(volumes)
+    catalogs = lr_sync.get_catalogs("/Volumes/mcdaddy/pictures/lightroom/catalogs")
+    pprint.pprint(catalogs)
+
 
 if __name__ == '__main__':
+    setup_logger()
     main()

@@ -1,0 +1,4 @@
+clarifai
+requests
+xxhash
+BeautifulSoup4
