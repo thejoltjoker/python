@@ -76,7 +76,7 @@ class PlayBlast(scene.Scene,quicktime.Quicktime):
         # get render settings's width and height
         if not width:
             import digital37.maya.lighting.get_render_resolution as get_render_resolution
-            width,height = get_render_resolution.main()
+            width,height = get_render_resolution.rename()
         self.Width = width
         self.Height = height
             

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-organize_files_year.py
-Description of organize_files_year.py.
+file_organizer.py
+Organize files based on type etc.
 """
 
 import os
@@ -10,14 +10,14 @@ import time
 import string
 import shutil
 import hashlib
+import xxhash
 import pprint
+import argparse
+from pathlib import Path
 
 
 class FileOrganizer:
     def __init__(self, source, dest=None, exclude=None, group=True):
-
-        # Set variables
-
         # Get source folder
         self.source_folder = source
 
@@ -40,7 +40,7 @@ class FileOrganizer:
 
         self.groups = {'books': ['epub', 'mobi'],
                        'web': ['html', 'htm', 'php'],
-                       'videos': ['mp4', 'avi', 'mpg', 'mov', 'mpeg', 'flv', 'mkv', 'mod', 'm2ts'],
+                       'videos': ['mp4', 'avi', 'mpg', 'mov', 'mpeg', 'flv', 'mkv', 'mod', 'm2ts', '3gp'],
                        'images': ['jpg', 'arw', 'gif', 'psd', 'jpeg', 'dng', 'cr2', 'arw', 'tif', 'tiff', 'png', 'gpr',
                                   'bmp', 'exr', 'sr2', 'arw'],
                        'photoshop': ['psd', 'psb'],
@@ -49,9 +49,9 @@ class FileOrganizer:
                        'luts': ['cube', 'mga'],
                        '3d': ['abc', 'obj', 'ma', 'mb', '3ds', 'fbx'],
                        'archives': ['zip', 'tar', 'gz', 'rar', '7z', '7zip', 'arj', 'z'],
-                       'documents': ['doc', 'gdoc', 'xls', 'docx', 'xlsx', 'pdf', 'txt', 'md'],
-                       'audio': ['mp3', 'wav', 'flac', 'opus', 'wma', 'aif', 'mpa', 'ogg', 'aiff', 'midaac'],
-                       'apps': ['exe', 'app'],
+                       'documents': ['doc', 'gdoc', 'xls', 'docx', 'xlsx', 'pdf', 'txt', 'md', 'pptx', 'ppt', 'odt'],
+                       'audio': ['mp3', 'wav', 'flac', 'opus', 'wma', 'aif', 'mpa', 'ogg', 'aiff', 'mid', 'aac'],
+                       'apps': ['exe', 'app', 'apk', 'msi'],
                        'fonts': ['ttf', 'otf']
                        }
 
@@ -110,6 +110,7 @@ class FileOrganizer:
         return file_date.split('-')
 
     def get_file_checksum(self, fname):
+        hash_xxhash = xxhash.xxh64()
         hash_md5 = hashlib.md5()
         with open(fname, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
@@ -267,14 +268,26 @@ class FileOrganizer:
 def main():
     # organizer = FileOrganizer(r'C:\Users\thejoltjoker\Desktop\test\source', r'C:\Users\thejoltjoker\Desktop\test\dest')
     # organizer = FileOrganizer(r'E:\Dropbox\Pictures', exclude=['lightroom'])
-    organizer = FileOrganizer(
-        '/Volumes/mcbeast/temp_media/_sorted/images')
+    # Create organizer object
+    # organizer = FileOrganizer('/Volumes/data_a/temp/foto_01/Bilder/72 ppi', dest="/Users/johannes/Dropbox/temp/server")
+    source_path = r"/Volumes/data_a/temp/temp_macbook/videos"
+    organizer = FileOrganizer(source_path, dest="/Users/johannes/Dropbox/temp/server")
+
+    # Make a dryrun
     # organizer.dryrun(verify=False)
+
+    # Copy files
     # organizer.copy()
-    # organizer.move(delete_empty=True)
+
+    # Move files
+    organizer.move(delete_empty=True)
+
+    # Delete empty folders
     # organizer.delete_empty_folders()
-    dupes = organizer.find_duplicates()
-    organizer.pretty_print(dupes)
+
+    # Find and move duplicates
+    # dupes = organizer.find_duplicates()
+    # organizer.pretty_print(dupes)
     # Move duplicates
     # for key, values in dupes.items():
     #     # print(values[1])
@@ -283,9 +296,68 @@ def main():
     #         if '0301' in file_path:
     #             print(file_path)
     #             os.remove(file_path)
-                # print(os.path.join('/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
-                # organizer.move_file(file_path, os.path.join(
-                #     '/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
+    # print(os.path.join('/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
+    # organizer.move_file(file_path, os.path.join(
+    #     '/Volumes/mcbeast/temp_media/_duplicates', os.path.basename(file_path)))
+
+
+def cli():
+    """Command line interface"""
+    # Create the parser
+    parser = argparse.ArgumentParser(
+        description="Organize files")
+
+    # Add the arguments
+    parser.add_argument("source",
+                        type=str,
+                        help="The source folder")
+
+    parser.add_argument("-d", "--destination",
+                        type=str,
+                        help="The destination folder",
+                        action="store")
+
+    parser.add_argument("-m", "--move",
+                        help="Move files instead of copy",
+                        action="store_true")
+
+    parser.add_argument("-e", "--exclude",
+                        help="Move files instead of copy",
+                        action="store_true")
+
+    parser.add_argument("--dryrun",
+                        help="Run the script without actually changing any files",
+                        action="store_true")
+
+    # Execute the parse_args() method
+    args = parser.parse_args()
+
+    # Print the title
+    print("================")
+    print("File organizer")
+    print("================")
+    print("")
+
+    confirmation = False
+
+    source = args.source
+
+    print("")
+
+    # Set the folder structure
+    folder_structure = args.structure
+
+    # Set the transfer mode
+    if args.move:
+        mode = "move"
+    else:
+        mode = "copy"
+
+    # Run offloader
+    organizer = FileOrganizer(source=source,
+                              dest=destination,
+                              exclude=None,
+                              group=True)
 
 
 if __name__ == '__main__':

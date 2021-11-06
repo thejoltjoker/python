@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-script_name.py
-Description of script_name.py.
+UP TO DATE CURRENT VERSION AT https://github.com/thejoltjoker/camera-offload
+---
+camera_offload.py
+A script for offloading files from a memory card etc.
 """
-# TODO multiple destinations
-# TODO make it easier to customize 7:45 torsdag 24
 import os
 import hashlib
 import xxhash
@@ -15,11 +15,25 @@ import shutil
 import math
 import argparse
 import time
+import pathlib
+
+
+def setup_logger():
+    # Setup logger
+    logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)-20s %(name)-10s %(levelname)-8s %(message)s', "%Y-%m-%d %H:%M:%S")
+
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    return logger
 
 
 class Offloader:
     def __init__(self, source, dest, original_structure, move, dryrun):
-        self.logger = self.setup_logger()
+        self.logger = setup_logger()
         self.source = source
         self.destination = dest
         self.original_structure = original_structure
@@ -112,19 +126,8 @@ class Offloader:
                         'journal.412',
                         'retire.411']
 
-    def setup_logger(self):
-        # Setup logger
-        logger = logging.getLogger(__name__)
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)-20s %(name)-10s %(levelname)-8s %(message)s', "%Y-%m-%d %H:%M:%S")
-
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
-        return logger
-
     def offload(self):
+        """Offload files from a memory card"""
         skipped_files = []
         transferred_files = []
         created_folders = []

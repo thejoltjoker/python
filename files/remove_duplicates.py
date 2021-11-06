@@ -8,6 +8,7 @@ import os
 import argparse
 import logging
 from pathlib import Path
+from unittest import TestCase
 
 try:
     import xxhash
@@ -36,15 +37,25 @@ def file_checksum(path, block_size=65536):
     return h(path.read_bytes()).hexdigest()
 
 
-def filelist(path, include_subfolders=False):
+def filelist(path, exclude=None, include_subfolders=False):
     """Returns a list of files"""
+    path = Path(path)
+
     if include_subfolders:
-        return sorted([x for x in path.rglob('*.*') if x.is_file()])
+        files = [x for x in path.rglob('*.*') if x.is_file()]
     else:
-        return sorted([x for x in path.iterdir() if x.is_file()])
+        files = [x for x in path.iterdir() if x.is_file()]
+
+    if exclude:
+        if isinstance(exclude, str):
+            exclude = [exclude]
+
+        files = [x for x in files if not any(ex in str(x.resolve()) for ex in exclude)]
+    # print(f'{len(files)} | {exclude} | {include_subfolders}')
+    return sorted(files)
 
 
-def remove_duplicates(path, include_subfolders=False, move=False, dryrun=False):
+def remove_duplicates(path, include_subfolders=False, move=False, exclude=None, dryrun=False):
     # Get hashes for existing files
     path = Path(path)
     move_path = path / '..' / f'{path.stem}_duplicates'
@@ -52,7 +63,12 @@ def remove_duplicates(path, include_subfolders=False, move=False, dryrun=False):
         logging.info(f'Looking for duplicates in {path}, including its subfolders')
     else:
         logging.info(f'Looking for duplicates in {path}')
-    files = filelist(path, include_subfolders=include_subfolders)
+    if exclude:
+        if isinstance(exclude, str):
+            logging.info(f'Skipping any paths containing {exclude}')
+        else:
+            logging.info(f'Skipping any paths containing {", ".join([x for x in exclude])}')
+    files = filelist(path, exclude=exclude, include_subfolders=include_subfolders)
 
     # Check for duplicates in path
     checksums = {}
@@ -76,13 +92,16 @@ def remove_duplicates(path, include_subfolders=False, move=False, dryrun=False):
                 file.unlink()
         else:
             checksums[checksum] = [file]
-    logging.info(f'{duplicates} duplicates found')
+
     if dryrun:
         for k, v in checksums.items():
             if len(v) > 1:
-                logging.info(f'{len(v)} {k}:')
-                logging.info("\n".join([str(x) for x in v]))
+                logging.info(f'{k}:')
+                logging.info("\n".join([f'\t{y}: {x}' for y, x in enumerate(v, 1)]))
 
+    logging.info('')
+    logging.info(f'{duplicates} duplicates found')
+    logging.info('')
 
 def main():
     """docstring for main"""
@@ -92,10 +111,13 @@ def main():
                         help='Whether or not to scan in subfolders')
     parser.add_argument('-m', '--move', dest='move', action='store_true',
                         help='Move duplicate files instead of deleting')
+    parser.add_argument('-e', '--exclude', nargs='+', dest='exclude',
+                        help='A string or list of strings to exclude if in full path')
     parser.add_argument('--dryrun', dest='dryrun', action='store_true',
                         help='Just test')
+
     args = parser.parse_args()
-    remove_duplicates(args.path, args.subfolders, args.move, args.dryrun)
+    remove_duplicates(args.path, args.subfolders, args.move, exclude=args.exclude, dryrun=args.dryrun)
 
 
 if __name__ == '__main__':

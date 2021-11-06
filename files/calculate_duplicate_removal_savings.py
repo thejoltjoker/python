@@ -1,51 +1,92 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-check_duplicates_md5.py
-A script to calculate how much storage space you can save by removing duplicates
+check_duplicates_xxhash.py
+Check for duplicates using xxhash.
 """
-# TODO get file size
+
 import os
 import sys
+import xxhash
 import hashlib
+from pathlib import Path
+from pprint import pprint
+
+def human_file_size(num):
+    """Readable file size"""
+    for unit in ["", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+        if abs(num) < 1024.0:
+            return "%3.1f %s" % (num, unit)
+        num /= 1024.0
+    return "%.1f%s" % (num, "YB")
+
+def file_checksum(file_path, block_size=65536):
+    """Get the checksum for a file"""
+    path = Path(file_path)
+    h = xxhash.xxh64()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(block_size), b""):
+            h.update(chunk)
+        return h.hexdigest()
 
 
-def get_file_size(file):
-    size = os.path.getsize(file)
-    mb_size = float(size) / (1024 * 1024.0)
-    return str(round(mb_size, 2))
+def scan_directory(directory):
+    filelist = {}
 
+    # Create filelist
+    for root, subdirs, files in os.walk(directory):
+        for f in files:
+            path = Path(root) / f
+            file_hash = file_checksum(path)
 
-def hashfile(path, blocksize=65536):
-    file = open(path, 'rb')
-    hasher = hashlib.md5()
-    buf = file.read(blocksize)
-    while len(buf) > 0:
-        hasher.update(buf)
-        buf = file.read(blocksize)
-    file.close()
-    return hasher.hexdigest()
-
-
-def find_duplicates(folder):
-    dups = {}
-    for root, subdirs, files in os.walk(folder):
-        for filename in files:
-            path = os.path.join(root, filename)
-            file_hash = hashfile(path)
-
-            if file_hash in dups:
-                dups[file_hash].append(path)
+            if filelist.get(file_hash):
+                filelist[file_hash]["paths"].append(str(path))
             else:
-                dups[file_hash] = [path]
-    return dups
+                filelist[file_hash] = {
+                    "paths": [str(path)],
+                    "size": path.stat().st_size,
+                    "checksum": file_hash
+                }
+
+    return filelist
+
+
+class SpaceSavings:
+    def __init__(self, directory, method="hash"):
+        self.filelist = scan_directory(directory)
+        self.duplicates = self.get_duplicates(method=method)
+        self.savings = self.calculate_savings()
+
+    def get_duplicates(self, directory=None, method="hash"):
+        if directory is None:
+            filelist = self.filelist
+        else:
+            filelist = scan_directory(directory)
+
+        duplicates = {}
+        for f in filelist:
+            if len(filelist[f].get("paths")) > 1:
+                duplicates[f] = filelist[f]
+        print(f"Found {len(duplicates)} duplicates in {len(filelist)} files")
+
+        return duplicates
+
+    def calculate_savings(self):
+        savings = 0
+        for f in self.duplicates:
+            # Calculate based on how many duplicates
+            amount = len(self.duplicates[f].get("paths"))
+            savings += ((amount - 1) * self.duplicates[f].get("size"))
+
+        return savings
 
 
 def main():
     """docstring for main"""
-    result = find_duplicates('/Volumes/data_a/media/photos/2008')
-    for i in result.items():
-        print(i)
+    dir = "/Users/johannes/Desktop/1909_kulturrundan"
+
+    ss = SpaceSavings(dir)
+    print(human_file_size(ss.savings))
 
 
 if __name__ == '__main__':
